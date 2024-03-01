@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiDrawer from '@mui/material/Drawer';
@@ -17,15 +17,19 @@ import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { mainListItems, secondaryListItems } from './listItems';
+import { MainListItems, SecondaryListItems } from './listItems';
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.min.css';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import {
     Card,
     CardActionArea,
     CardContent,
     CardMedia
 } from "@mui/material";
+
+const images = ["/images/sample.jpg", "/images/sample2.jpg"]; // Array of image URLs
 
 function Copyright(props) {
     return (
@@ -86,7 +90,6 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
-// TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
@@ -95,12 +98,23 @@ export default function Dashboard() {
         setOpen(!open);
     };
     useEffect(() => {
-        const viewer = new Viewer(document.getElementById('image-gallery'));
+        const viewer = new Viewer(document.getElementById('image-gallery'))
         return () => {
             viewer.destroy();
         };
     }, []);
 
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const handleNext = () => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+    };
+
+    const handlePrevious = () => {
+        setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+    };
+
+    const [annotation, setAnnotation] = useState(null)
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -140,7 +154,7 @@ export default function Dashboard() {
                         </IconButton>
                     </Toolbar>
                 </AppBar>
-                <Drawer variant="permanent" open={open}>
+                <Drawer variant="permanent" open={true}>
                     <Toolbar
                         sx={{
                             display: 'flex',
@@ -149,16 +163,15 @@ export default function Dashboard() {
                             px: [1],
                         }}
                     >
-                        <IconButton onClick={toggleDrawer}>
-                            <ChevronLeftIcon />
-                        </IconButton>
                     </Toolbar>
                     <Divider />
-                    <List component="nav">
-                        {mainListItems}
+                    {/* <List component="nav">
+                        {MainListItems}
                         <Divider sx={{ my: 1 }} />
-                        {secondaryListItems}
-                    </List>
+                        {SecondaryListItems}
+                    </List> */}
+                    <MainListItems annotation={annotation} setAnnotation={setAnnotation}/>
+                    <SecondaryListItems/>
                 </Drawer>
                 <Box
                     component="main"
@@ -174,31 +187,26 @@ export default function Dashboard() {
                 >
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-                        <Grid container spacing={3}>
-                            {/* Chart */}
-                            {/* Recent Deposits */}
-                            {/* Recent Orders */}
-                            <Grid item xs={12}>
-                                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                                    {/* <Orders /> */}
-                                    <Card>
-                                        <CardActionArea id="image-gallery">
-                                            <CardMedia
-                                                component="img"
-                                                height="auto"
-                                                image="/images/sample2.jpg" // Use the representative image URL here
-                                            />
-                                            <CardContent>
-                                                <Typography variant="h6" component="div">
-                                                    {"hello"}
-                                                </Typography>
-                                                {/* You can add more details about the collection here */}
-                                            </CardContent>
-                                        </CardActionArea>
-                                    </Card>
-
-                                </Paper>
+                        <Grid container spacing={3} justifyContent="center">
+                            <ArrowBackIcon item xs={2} onClick={handlePrevious} style={{ cursor: 'pointer' }} />
+                            <Grid item xs={8} justifyContent="center">
+                                <Card>
+                                    <CardActionArea id="image-gallery" style={{ position: 'relative' }}>
+                                        <CardMedia
+                                            component="img"
+                                            height="auto"
+                                            image={images[currentIndex]} // Use the representative image URL here
+                                        />
+                                        <CardContent>
+                                            <Typography variant="h6" component="div">
+                                                {"hello"}
+                                            </Typography>
+                                            {/* You can add more details about the collection here */}
+                                        </CardContent>
+                                    </CardActionArea>
+                                </Card>
                             </Grid>
+                            <ArrowForwardIcon onClick={handleNext} style={{ cursor: 'pointer' }} />
                         </Grid>
                         <Copyright sx={{ pt: 4 }} />
                     </Container>
