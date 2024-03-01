@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
 import ImageCollectionGallery from "./components/dashboard";
-import ViewerPage from "./components/viewer";
+import ViewerPage from "./components/viewer3";
 
 function App() {
     return (
