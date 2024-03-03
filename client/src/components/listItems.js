@@ -17,9 +17,8 @@ const generateListItems = (labels, todoPrefix, selected, setSelected) => {
 
 // Define the labels for the main list items
 const mainListLabels = ['Dashboard', 'Orders', 'Customers', 'Reports', 'Integrations'];
-const secondaryListLabels = ['Current month', 'Last quarter', 'Year-end sale'];
 
-export const MainListItems = ({ annotation, setAnnotation }) => {
+const MainListItems = ({ annotation, setAnnotation }) => {
     return (
         <React.Fragment>
             {generateListItems(mainListLabels, 'Main Checkbox', annotation, setAnnotation)}
@@ -27,15 +26,4 @@ export const MainListItems = ({ annotation, setAnnotation }) => {
     );
 };
 
-export const SecondaryListItems = () => {
-    const [selectedSecondary, setSelectedSecondary] = useState(null);
-
-    return (
-        <React.Fragment>
-            <ListSubheader component="div" inset>
-                Saved reports
-            </ListSubheader>
-            {generateListItems(secondaryListLabels, 'Secondary Checkbox', selectedSecondary, setSelectedSecondary)}
-        </React.Fragment>
-    );
-};
+export default MainListItems

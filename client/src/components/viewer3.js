@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from "react-router-dom"
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MuiDrawer from '@mui/material/Drawer';
@@ -17,7 +18,7 @@ import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { MainListItems, SecondaryListItems } from './listItems';
+import MainListItems from './listItems';
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.min.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -31,18 +32,6 @@ import {
 
 const images = ["/images/sample.jpg", "/images/sample2.jpg"]; // Array of image URLs
 
-function Copyright(props) {
-    return (
-        <Typography variant="body2" color="text.secondary" align="center" {...props}>
-            {'Copyright © '}
-            <Link color="inherit" href="https://mui.com/">
-                Your Website
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
 
 const drawerWidth = 240;
 
@@ -93,6 +82,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
+    let { collectionName } = useParams()
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
         setOpen(!open);
@@ -126,7 +116,7 @@ export default function Dashboard() {
                             pr: '24px', // keep right padding when drawer closed
                         }}
                     >
-                        <IconButton
+                        {/* <IconButton
                             edge="start"
                             color="inherit"
                             aria-label="open drawer"
@@ -137,7 +127,7 @@ export default function Dashboard() {
                             }}
                         >
                             <MenuIcon />
-                        </IconButton>
+                        </IconButton> */}
                         <Typography
                             component="h1"
                             variant="h6"
@@ -145,33 +135,15 @@ export default function Dashboard() {
                             noWrap
                             sx={{ flexGrow: 1 }}
                         >
-                            Dashboard
+                            {collectionName}
                         </Typography>
-                        <IconButton color="inherit">
-                            <Badge badgeContent={4} color="secondary">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant="permanent" open={true}>
-                    <Toolbar
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            px: [1],
-                        }}
-                    >
-                    </Toolbar>
-                    <Divider />
-                    {/* <List component="nav">
-                        {MainListItems}
-                        <Divider sx={{ my: 1 }} />
-                        {SecondaryListItems}
-                    </List> */}
-                    <MainListItems annotation={annotation} setAnnotation={setAnnotation}/>
-                    <SecondaryListItems/>
+                    {/* <Divider /> */}
+                    <List component="nav">
+                        <MainListItems annotation={annotation} setAnnotation={setAnnotation} />
+                    </List>
                 </Drawer>
                 <Box
                     component="main"
@@ -188,8 +160,8 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3} justifyContent="center">
-                            <ArrowBackIcon item xs={2} onClick={handlePrevious} style={{ cursor: 'pointer' }} />
-                            <Grid item xs={8} justifyContent="center">
+                            <ArrowBackIcon item xs={1} onClick={handlePrevious} style={{ cursor: 'pointer' }} />
+                            <Grid item xs={10} justifyContent="center">
                                 <Card>
                                     <CardActionArea id="image-gallery" style={{ position: 'relative' }}>
                                         <CardMedia
@@ -206,9 +178,8 @@ export default function Dashboard() {
                                     </CardActionArea>
                                 </Card>
                             </Grid>
-                            <ArrowForwardIcon onClick={handleNext} style={{ cursor: 'pointer' }} />
+                            <ArrowForwardIcon item xs={1} onClick={handleNext} style={{ cursor: 'pointer' }} />
                         </Grid>
-                        <Copyright sx={{ pt: 4 }} />
                     </Container>
                 </Box>
             </Box>

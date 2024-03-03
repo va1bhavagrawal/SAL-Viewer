@@ -1,64 +1,80 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom"; // Assuming you're using React Router for navigation
 import {
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardActionArea,
-  CardContent,
-  CardMedia
+    Container,
+    Typography,
+    Grid,
+    Card,
+    CardActionArea,
+    CardContent,
+    CardMedia
 } from "@mui/material";
 
 const HomePage = () => {
-  // Sample data for categories and sub-collections
-  const categories = [
-    { title: "Nature", collections: ["Landscapes", "Animals", "Flowers"] },
-    { title: "Travel", collections: ["Europe", "Asia", "America"] },
-    { title: "Food", collections: ["Fruits", "Vegetables", "Desserts"] }
-    // Add more categories as needed
-  ];
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  // Sample URL for representative image
-  const representativeImageUrl = "/images/sample.jpg";
+    useEffect(() => {
+        // Fetch categories from backend API
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch categories");
+                }
+                const data = await response.json();
+                setCategories(data.categories); // Assuming your response has a key "categories" containing the categories list
+                console.log(data.categories)
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                setLoading(false);
+            }
+        };
 
-  return (
-    <Container>
-      {categories.map((category) => (
-        <div key={category.title}>
-          <Typography variant="h4" gutterBottom>
-            {category.title}
-          </Typography>
-          <Grid container spacing={2}>
-            {category.collections.map((collection) => (
-              <Grid item xs={12} sm={6} md={4} key={collection}>
-                <Card>
-                  <CardActionArea
-                    component={Link}
-                    to={`/collection/${collection}`}
-                  >
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={representativeImageUrl} // Use the representative image URL here
-                      alt={collection}
-                    />
-                    <CardContent>
-                      <Typography variant="h6" component="div">
-                        {collection}
-                      </Typography>
-                      {/* You can add more details about the collection here */}
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Grid>
+        fetchCategories();
+    }, []);
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    return (
+        <Container>
+            {categories.map((category) => (
+                <div key={category.title}>
+                    <Typography variant="h4" gutterBottom>
+                        {category.title}
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {category.collections.map((collection) => (
+                            <Grid item xs={12} sm={6} md={4} key={collection}>
+                                <Card>
+                                    <CardActionArea
+                                        component={Link}
+                                        to={`/collection/${collection}`}
+                                    >
+                                        <CardMedia
+                                            component="img"
+                                            height="200"
+                                            image={collection.thumbnail} // Assuming your category objects have a property "representativeImageUrl"
+                                            alt={collection.title}
+                                        />
+                                        <CardContent>
+                                            <Typography variant="h6" component="div">
+                                                {collection.title}
+                                            </Typography>
+                                            {/* You can add more details about the collection here */}
+                                        </CardContent>
+                                    </CardActionArea>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </div>
             ))}
-          </Grid>
-        </div>
-      ))}
-    </Container>
-  );
+        </Container>
+    );
 };
 
 export default HomePage;
-
