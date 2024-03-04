@@ -84,17 +84,56 @@ const defaultTheme = createTheme();
 export default function Dashboard() {
     let { collectionName } = useParams()
     const [open, setOpen] = React.useState(true);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [annotation, setAnnotation] = useState(null)
+    const [loading, setLoading] = useState(true)
     const toggleDrawer = () => {
         setOpen(!open);
     };
+    const [imageSrc, setImageSrc] = useState("")
     useEffect(() => {
-        const viewer = new Viewer(document.getElementById('image-gallery'))
-        return () => {
-            viewer.destroy();
+        // Fetch categories from backend API
+        const fetchAnnotation = async () => {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/fetch_annotation", {
+                    method: "GET",
+                    headers: {
+                        "ctgName": "palm_leaves",
+                        "collectionName": "TB",
+                        "imgIdx": "0",
+                        "split": "train",
+                        "annotation": "scribbles"
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("Failed to fetch categories");
+                }
+                const blob = await response.blob()
+                setImageSrc(URL.createObjectURL(blob))
+                setLoading(false)
+                console.log("received image")
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                setLoading(false);
+            }
         };
+
+        fetchAnnotation();
     }, []);
 
-    const [currentIndex, setCurrentIndex] = useState(0);
+
+
+    useEffect(() => {
+        // Initialize Viewer.js when imageSrc is set
+        if (imageSrc) {
+          const viewer = new Viewer(document.getElementById('image-gallery'), {
+            inline: false,
+            viewed() {
+              viewer.zoomTo(1); // Initial zoom level
+            },
+          });
+        }
+      }, [imageSrc]);
 
     const handleNext = () => {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -104,7 +143,10 @@ export default function Dashboard() {
         setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
     };
 
-    const [annotation, setAnnotation] = useState(null)
+
+    // if (loading) {
+    //     return <div id="image-gallery">Loading...</div>;
+    // }
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -167,7 +209,7 @@ export default function Dashboard() {
                                         <CardMedia
                                             component="img"
                                             height="auto"
-                                            image={images[currentIndex]} // Use the representative image URL here
+                                            image={imageSrc} // Use the representative image URL here
                                         />
                                         <CardContent>
                                             <Typography variant="h6" component="div">

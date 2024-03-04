@@ -50,21 +50,18 @@ def collections():
             found = False
             for thumbnail in thumbnails:
                 if thumbnail.split(".")[0] == dataset:
-                    os.remove(osp.join(CLIENT_IMAGES, "thumbnails", "TB.jpg"))
                     # the thumbnail for this dataset is present
                     found = True
                     break
-            # if found:
-            #     continue
+            if found:
+                continue
 
             # pick a random image for thumbnail
             dataset_images = os.listdir(osp.join(DATASETS_DIR, ctg, dataset, "train"))
+            dataset_images = [filename for filename in dataset_images if filename.find(".pkl") == -1]
             random_img_path = osp.join(DATASETS_DIR, ctg, dataset, "train", dataset_images[np.random.randint(len(dataset_images))])
             file_extension = random_img_path.split("/")[-1].split(".")[-1]
-            shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.{file_extension}"))
-            # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "thumbnails", f"polygons.jpg"))
-            # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "thumbnails", f"polygons2.jpg"))
-    # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "thumbnails", f"TB.jpg"))
+            shutil.copy(random_img_path, osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.{file_extension}"))
 
     response = jsonify({"categories": categories})
     return response, 200
@@ -74,7 +71,7 @@ def collections():
 returns:
 * the list of available annotations
 """
-@app.route("/fetch_img_data", methods=["GET"])
+@app.route("/fetch_annotation", methods=["GET"])
 def fetch_img_data():
     if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
         os.mkdir(osp.join(CLIENT_IMAGES, "current"))
@@ -88,9 +85,13 @@ def fetch_img_data():
         return 'Error: "imgIdx" header not found', 400  # Return a 400 Bad Request status if the header is missing
     if 'split' not in request.headers:
         return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'annotation' not in request.headers:
+        return 'Error: "annotation" header not found', 400  # Return a 400 Bad Request status if the header is missing
 
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
+    annotation_name = request.headers['annotation']
+    assert annotation_name in ANNOTATION_TYPES
     img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
     split = request.headers['split']
     
@@ -109,32 +110,25 @@ def fetch_img_data():
 
     assert img_data is not None
 
-    annotation_names = []
-    for annotation_name, annotation_data in img_data.items():
-        annotation_names.append(annotation_name)
-        assert annotation_name in ANNOTATION_TYPES
-        if annotation_name == "polygons":
-            polygon_img = plain_img.copy()
-            polygons = annotation_data
-            print(type(polygons))
-            print(polygons[0].dtype)
-            print(polygons[0].shape)
-            cv2.polylines(polygon_img, polygons, True, (255, 0, 0), 2) 
-            cv2.imwrite(f"polygons.jpg", polygon_img)
-            # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "current", "polygons.jpg"))
-
-        elif annotation_name == "scribbles":
-            scribble_img = plain_img.copy()
-            scribbles = annotation_data
-            cv2.polylines(scribble_img, scribbles, False, (255, 0, 0), 2)
-            # cv2.imwrite(f"scribbles.jpg", scribble_img)
-            # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
+    annotation_data = img_data[annotation_name]
+    if annotation_name == "polygons":
+        polygon_img = plain_img.copy()
+        polygons = annotation_data
+        # print(type(polygons))
+        # print(polygons[0].dtype)
+        # print(polygons[0].shape)
+        cv2.polylines(polygon_img, polygons, True, (255, 0, 0), 2) 
+        cv2.imwrite(f"annotation.jpg", polygon_img)
+        # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "current", "polygons.jpg"))
+    elif annotation_name == "scribbles":
+        scribble_img = plain_img.copy()
+        scribbles = annotation_data
+        cv2.polylines(scribble_img, scribbles, False, (255, 0, 0), 2)
+        cv2.imwrite(f"annotation.jpg", scribble_img)
+        # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
     
-    res_json = {
-        "annotation_names": annotation_names
-    }
-    response = jsonify(res_json)
-    return response, 200 
+    return send_file("annotation.jpg", mimetype="image/jpeg")
+
     
 
 
