@@ -9,6 +9,7 @@ import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import { ListSubheader } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import Badge from '@mui/material/Badge';
 import Container from '@mui/material/Container';
@@ -18,7 +19,7 @@ import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import MainListItems from './listItems';
+import { MainListItems, SplitItems } from './listItems';
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.min.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -89,6 +90,7 @@ export default function Dashboard() {
     const [annotations, setAnnotations] = useState([])
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
+    const [split, setSplit] = useState("train")
     const toggleDrawer = () => {
         setOpen(!open);
     };
@@ -96,7 +98,7 @@ export default function Dashboard() {
     const [imageSrc, setImageSrc] = useState("")
     useEffect(() => {
         // Fetch annotation names from backend API
-        const fetchAnnotationNames = async () => {
+        const fetchCollectionMetadata = async () => {
             try {
                 const response = await fetch("http://127.0.0.1:5000/fetch_collection_metadata", {
                     method: "GET",
@@ -104,7 +106,7 @@ export default function Dashboard() {
                         "ctgName": ctgName,
                         "collectionName": collectionName,
                         "imgIdx": currentIndex,
-                        "split": "train",
+                        "split": split,
                     }
                 });
 
@@ -112,9 +114,14 @@ export default function Dashboard() {
                     throw new Error("Failed to fetch annotation names");
                 }
                 const responseJSON = await response.json();
-                const annotationNames = responseJSON.annotation_names; 
-                setAnnotationNames(annotationNames)
-                setNumImages(responseJSON.num_images)
+                if (responseJSON.splitNotFound === true) {
+                    setAnnotationNames([])
+                    setNumImages(0)
+                }
+                else {
+                    setAnnotationNames(responseJSON.annotation_names);
+                    setNumImages(responseJSON.num_images)
+                }
                 // console.log("Received annotation names:", annotationNames);
             } catch (error) {
                 console.error("Error fetching annotation names:", error);
@@ -128,7 +135,7 @@ export default function Dashboard() {
                         "ctgName": ctgName,
                         "collectionName": collectionName,
                         "imgIdx": currentIndex,
-                        "split": "train",
+                        "split": split,
                         "annotation": annotations
                     }
                 });
@@ -138,31 +145,31 @@ export default function Dashboard() {
                 const blob = await response.blob()
                 setImageSrc(URL.createObjectURL(blob))
                 setLoading(false)
-                console.log("received image")
+                // console.log("received image")
             } catch (error) {
                 console.error("Error fetching categories:", error);
                 setLoading(false);
             }
         };
 
-        fetchAnnotationNames();
+        fetchCollectionMetadata();
         fetchAnnotation();
-    }, [annotations, ctgName, collectionName, currentIndex]);
+    }, [annotations, split, ctgName, collectionName, currentIndex]);
 
-    console.log("currentIndex is set to " + currentIndex)
+    // console.log("currentIndex is set to " + currentIndex)
 
 
     useEffect(() => {
         // Initialize Viewer.js when imageSrc is set
         if (imageSrc) {
-          const viewer = new Viewer(document.getElementById('image-gallery'), {
-            inline: false,
-            viewed() {
-              viewer.zoomTo(1); // Initial zoom level
-            },
-          });
+            const viewer = new Viewer(document.getElementById('image-gallery'), {
+                inline: false,
+                viewed() {
+                    viewer.zoomTo(1); // Initial zoom level
+                },
+            });
         }
-      }, [imageSrc]);
+    }, [imageSrc]);
 
     const handleNext = () => {
         let nextIndex = currentIndex + 1
@@ -221,10 +228,18 @@ export default function Dashboard() {
                     </Toolbar>
                 </AppBar>
                 <Drawer variant="permanent" open={true}>
-                    {/* <Divider /> */}
                     <List component="nav">
-                        <MainListItems annotations={annotations} setAnnotations={setAnnotations} annotationNames={annotationNames} />
+                        <ListSubheader component="div" style={{ textAlign: 'center' }}>
+                            Ground Truth Annotations
+                        </ListSubheader>
+                        {annotationNames.length > 0 && <MainListItems annotations={annotations} setAnnotations={setAnnotations} annotationNames={annotationNames} />}
+                        <Divider />
+                        <ListSubheader component="div" style={{ textAlign: 'center' }}>
+                            Splits
+                        </ListSubheader>
+                        <SplitItems split={split} setSplit={setSplit} />
                     </List>
+                    <Divider />
                 </Drawer>
                 <Box
                     component="main"

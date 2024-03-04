@@ -108,6 +108,8 @@ def fetch_annotation():
     annotations = request.headers['annotation']
     split = request.headers['split']
     # print(f"the index requested was {request.headers["imgIdx"]}")
+    if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split)):
+       return send_file("notfound.jpg", mimetype="image/jpeg") 
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
     # equal number of pickle files and images
@@ -176,6 +178,11 @@ def fetch_collection_metadata():
     collection_name = request.headers['collectionName']
     split = request.headers['split']
     # print(f"the index requested was {request.headers["imgIdx"]}")
+    if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split)):
+        res_json = {
+            "splitNotFound": True
+        }
+        return jsonify(res_json), 200
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
     num_images = len(imgs_list)
