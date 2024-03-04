@@ -86,13 +86,13 @@ export default function Dashboard() {
     const [open, setOpen] = React.useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [annotationNames, setAnnotationNames] = useState(0);
-    const [annotation, setAnnotation] = useState("polygons")
+    const [annotations, setAnnotations] = useState([])
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
     const toggleDrawer = () => {
         setOpen(!open);
     };
-    console.log("annotation was set to " + annotation)
+    // console.log("annotation was set to " + annotation)
     const [imageSrc, setImageSrc] = useState("")
     useEffect(() => {
         // Fetch annotation names from backend API
@@ -115,7 +115,7 @@ export default function Dashboard() {
                 const annotationNames = responseJSON.annotation_names; 
                 setAnnotationNames(annotationNames)
                 setNumImages(responseJSON.num_images)
-                console.log("Received annotation names:", annotationNames);
+                // console.log("Received annotation names:", annotationNames);
             } catch (error) {
                 console.error("Error fetching annotation names:", error);
             }
@@ -129,7 +129,7 @@ export default function Dashboard() {
                         "collectionName": collectionName,
                         "imgIdx": currentIndex,
                         "split": "train",
-                        "annotation": annotation
+                        "annotation": annotations
                     }
                 });
                 if (!response.ok) {
@@ -147,7 +147,7 @@ export default function Dashboard() {
 
         fetchAnnotationNames();
         fetchAnnotation();
-    }, [annotation, ctgName, collectionName, currentIndex]);
+    }, [annotations, ctgName, collectionName, currentIndex]);
 
     console.log("currentIndex is set to " + currentIndex)
 
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 <Drawer variant="permanent" open={true}>
                     {/* <Divider /> */}
                     <List component="nav">
-                        <MainListItems annotation={annotation} setAnnotation={setAnnotation} annotationNames={annotationNames} />
+                        <MainListItems annotations={annotations} setAnnotations={setAnnotations} annotationNames={annotationNames} />
                     </List>
                 </Drawer>
                 <Box

@@ -87,7 +87,7 @@ returns:
 * the list of available annotations
 """
 @app.route("/fetch_annotation", methods=["GET"])
-def fetch_img_data():
+def fetch_annotation():
     if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
         os.mkdir(osp.join(CLIENT_IMAGES, "current"))
 
@@ -105,9 +105,8 @@ def fetch_img_data():
 
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
-    annotation_name = request.headers['annotation']
+    annotations = request.headers['annotation']
     split = request.headers['split']
-    assert annotation_name in ANNOTATION_TYPES
     # print(f"the index requested was {request.headers["imgIdx"]}")
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
@@ -128,28 +127,26 @@ def fetch_img_data():
 
     assert img_data is not None
 
-    annotation_data = img_data["annotations"][annotation_name]
-    if annotation_name == "polygons":
-        polygon_img = plain_img.copy()
-        polygons = annotation_data
+    if "polygons" in annotations:
+        # polygon_img = plain_img.copy()
+        polygons = img_data["annotations"]["polygons"]
         # print(type(polygons))
         # print(polygons[0].dtype)
         # print(polygons[0].shape)
-        cv2.polylines(polygon_img, polygons, True, (255, 0, 0), 2) 
-        cv2.imwrite(f"annotation.jpg", polygon_img)
+        cv2.polylines(plain_img, polygons, True, (255, 0, 0), 3) 
+        # cv2.imwrite(f"annotation.jpg", polygon_img)
         # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "current", "polygons.jpg"))
-    elif annotation_name == "scribbles":
-        scribble_img = plain_img.copy()
-        scribbles = annotation_data
-        cv2.polylines(scribble_img, scribbles, False, (255, 0, 0), 2)
-        cv2.imwrite(f"annotation.jpg", scribble_img)
-        # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
-    
+    if "scribbles" in annotations:
+        scribbles = img_data["annotations"]["scribbles"]
+        cv2.polylines(plain_img, scribbles, False, (255, 0, 0), 2)
+
+    cv2.imwrite(f"annotation.jpg", plain_img)
+    # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
     return send_file("annotation.jpg", mimetype="image/jpeg")
 
 
 @app.route("/fetch_collection_metadata", methods=["GET"])
-def fetch_annotation_names():
+def fetch_collection_metadata():
     if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
         os.mkdir(osp.join(CLIENT_IMAGES, "current"))
 
