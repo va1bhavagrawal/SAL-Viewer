@@ -86,7 +86,7 @@ export default function Dashboard() {
     const [open, setOpen] = React.useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [annotationNames, setAnnotationNames] = useState(0);
-    const [annotation, setAnnotation] = useState("scribbles")
+    const [annotation, setAnnotation] = useState("polygons")
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
     const toggleDrawer = () => {
@@ -98,7 +98,7 @@ export default function Dashboard() {
         // Fetch annotation names from backend API
         const fetchAnnotationNames = async () => {
             try {
-                const annotationNamesResponse = await fetch("http://127.0.0.1:5000/fetch_collection_metadata", {
+                const response = await fetch("http://127.0.0.1:5000/fetch_collection_metadata", {
                     method: "GET",
                     headers: {
                         "ctgName": ctgName,
@@ -108,13 +108,13 @@ export default function Dashboard() {
                     }
                 });
 
-                if (!annotationNamesResponse.ok) {
+                if (!response.ok) {
                     throw new Error("Failed to fetch annotation names");
                 }
-                const annotationNamesJSON = await annotationNamesResponse.json();
-                const annotationNames = annotationNamesJSON.annotation_names; 
+                const responseJSON = await response.json();
+                const annotationNames = responseJSON.annotation_names; 
                 setAnnotationNames(annotationNames)
-                setNumImages(annotationNamesJSON.num_images)
+                setNumImages(responseJSON.num_images)
                 console.log("Received annotation names:", annotationNames);
             } catch (error) {
                 console.error("Error fetching annotation names:", error);
