@@ -1,4 +1,7 @@
 from flask import Flask, make_response, request, jsonify, send_file
+import PIL
+from PIL import Image
+import random
 from flask_cors import CORS
 import shutil
 import os 
@@ -46,7 +49,17 @@ def collections():
         categories.append({"title": ctg, "collections": []})
         datasets_list = os.listdir(osp.join(DATASETS_DIR, ctg))
         for dataset in datasets_list:
+
+            # pick a random image for thumbnail
+            splits = os.listdir(osp.join(DATASETS_DIR, ctg, dataset))
+            split = random.choice(splits)
+            dataset_images = os.listdir(osp.join(DATASETS_DIR, ctg, dataset, split))
+            dataset_images = [filename for filename in dataset_images if filename.find(".pkl") == -1]
+            random_img_path = osp.join(DATASETS_DIR, ctg, dataset, split, dataset_images[np.random.randint(len(dataset_images))])
+            file_extension = random_img_path.split("/")[-1].split(".")[-1]
             categories[-1]["collections"].append({"title": dataset, "thumbnail": f"/images/thumbnails/{dataset}.jpg"})
+
+            # see whether the thumbnail image needs to be copied to the right location
             found = False
             for thumbnail in thumbnails:
                 if thumbnail.split(".")[0] == dataset:
@@ -56,13 +69,15 @@ def collections():
             if found:
                 continue
 
-            # pick a random image for thumbnail
-            dataset_images = os.listdir(osp.join(DATASETS_DIR, ctg, dataset, "train"))
-            dataset_images = [filename for filename in dataset_images if filename.find(".pkl") == -1]
-            random_img_path = osp.join(DATASETS_DIR, ctg, dataset, "train", dataset_images[np.random.randint(len(dataset_images))])
-            file_extension = random_img_path.split("/")[-1].split(".")[-1]
-            shutil.copy(random_img_path, osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.{file_extension}"))
+            if file_extension == "png":
+                # img_png = Image.open(random_img_path)
+                # img_png.save(osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.jpg"))
+                img_png = cv2.imread(random_img_path)
+                cv2.imwrite(osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.jpg"), img_png)
+            else:
+                shutil.copy(random_img_path, osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.{file_extension}"))
 
+    # print(categories)
     response = jsonify({"categories": categories})
     return response, 200
     # return 'Hello, World!'
@@ -98,10 +113,10 @@ def fetch_img_data():
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
     # equal number of pickle files and images
     num_images = len(imgs_list)
-    img_name = get_file_name_by_idx(int(request.headers['imgIdx']), num_images)
+    img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
     img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
     img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name)
-    print(f"img_path: {img_path}")
+    # print(f"img_path: {img_path}")
     if not osp.exists(img_path):
         return 'Error: the given image does not exist!'
 
@@ -113,7 +128,7 @@ def fetch_img_data():
 
     assert img_data is not None
 
-    annotation_data = img_data[annotation_name]
+    annotation_data = img_data["annotations"][annotation_name]
     if annotation_name == "polygons":
         polygon_img = plain_img.copy()
         polygons = annotation_data
@@ -167,10 +182,9 @@ def fetch_annotation_names():
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
     num_images = len(imgs_list)
-    img_name = get_file_name_by_idx(int(request.headers['imgIdx']), num_images)
+    img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
     img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
     img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name)
-    print(f"img_path: {img_path}")
     if not osp.exists(img_path):
         return 'Error: the given image does not exist!'
 
@@ -182,7 +196,7 @@ def fetch_annotation_names():
 
     assert img_data is not None
 
-    annotation_names = list(img_data.keys()) 
+    annotation_names = list(img_data["annotations"].keys()) 
     res_json = {
         "annotation_names": annotation_names,
         "num_images": num_images
