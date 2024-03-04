@@ -88,6 +88,7 @@ export default function Dashboard() {
     const [annotationNames, setAnnotationNames] = useState(0);
     const [annotation, setAnnotation] = useState("scribbles")
     const [loading, setLoading] = useState(true)
+    const [numImages, setNumImages] = useState(0)
     const toggleDrawer = () => {
         setOpen(!open);
     };
@@ -97,7 +98,7 @@ export default function Dashboard() {
         // Fetch annotation names from backend API
         const fetchAnnotationNames = async () => {
             try {
-                const annotationNamesResponse = await fetch("http://127.0.0.1:5000/fetch_annotation_names", {
+                const annotationNamesResponse = await fetch("http://127.0.0.1:5000/fetch_collection_metadata", {
                     method: "GET",
                     headers: {
                         "ctgName": ctgName,
@@ -113,6 +114,7 @@ export default function Dashboard() {
                 const annotationNamesJSON = await annotationNamesResponse.json();
                 const annotationNames = annotationNamesJSON.annotation_names; 
                 setAnnotationNames(annotationNames)
+                setNumImages(annotationNamesJSON.num_images)
                 console.log("Received annotation names:", annotationNames);
             } catch (error) {
                 console.error("Error fetching annotation names:", error);
@@ -163,11 +165,21 @@ export default function Dashboard() {
       }, [imageSrc]);
 
     const handleNext = () => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1)); 
+        let nextIndex = currentIndex + 1
+        if (nextIndex >= numImages) {
+            nextIndex = 0
+        }
+        setCurrentIndex(nextIndex)
     };
 
     const handlePrevious = () => {
-        setCurrentIndex((prevIndex) => (prevIndex - 1)); 
+        let nextIndex = currentIndex - 1
+        if (nextIndex == -1) {
+            console.log("numImages is " + numImages)
+            nextIndex = parseInt(numImages) - 1
+            console.log("updated nextIndex to " + nextIndex)
+        }
+        setCurrentIndex(nextIndex)
     };
 
 

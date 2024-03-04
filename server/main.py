@@ -133,7 +133,7 @@ def fetch_img_data():
     return send_file("annotation.jpg", mimetype="image/jpeg")
 
 
-@app.route("/fetch_annotation_names", methods=["GET"])
+@app.route("/fetch_collection_metadata", methods=["GET"])
 def fetch_annotation_names():
     if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
         os.mkdir(osp.join(CLIENT_IMAGES, "current"))
@@ -166,7 +166,6 @@ def fetch_annotation_names():
     # print(f"the index requested was {request.headers["imgIdx"]}")
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
     imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
-    # equal number of pickle files and images
     num_images = len(imgs_list)
     img_name = get_file_name_by_idx(int(request.headers['imgIdx']), num_images)
     img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
@@ -185,7 +184,8 @@ def fetch_annotation_names():
 
     annotation_names = list(img_data.keys()) 
     res_json = {
-        "annotation_names": annotation_names
+        "annotation_names": annotation_names,
+        "num_images": num_images
     }
 
     return jsonify(res_json), 200
