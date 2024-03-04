@@ -10,18 +10,21 @@ const generateListItems = (labels, todoPrefix, selected, setSelected) => {
     return labels.map((label, index) => (
         <ListItemButton key={index} onClick={() => setSelected(label)}>
             <ListItemText primary={label} />
-            <Radio checked={selected === label} />
+            <Radio checked={selected === label} onChange={() => {
+                setSelected(label)
+            }} />
         </ListItemButton>
     ));
 };
 
 // Define the labels for the main list items
-const mainListLabels = ['Dashboard', 'Orders', 'Customers', 'Reports', 'Integrations'];
 
-const MainListItems = ({ annotation, setAnnotation }) => {
+const MainListItems = ({ annotation, setAnnotation, annotationNames }) => {
+    // console.log("the list was re-rendered!")
+    // console.log("annotationNames: " + annotationNames)
     return (
         <React.Fragment>
-            {generateListItems(mainListLabels, 'Main Checkbox', annotation, setAnnotation)}
+            {generateListItems(annotationNames, 'Main Checkbox', annotation, setAnnotation)}
         </React.Fragment>
     );
 };

@@ -91,11 +91,14 @@ def fetch_img_data():
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
     annotation_name = request.headers['annotation']
-    assert annotation_name in ANNOTATION_TYPES
-    img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
     split = request.headers['split']
-    
+    assert annotation_name in ANNOTATION_TYPES
+    # print(f"the index requested was {request.headers["imgIdx"]}")
     imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
+    imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
+    # equal number of pickle files and images
+    num_images = len(imgs_list)
+    img_name = get_file_name_by_idx(int(request.headers['imgIdx']), num_images)
     img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
     img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name)
     print(f"img_path: {img_path}")
@@ -129,7 +132,63 @@ def fetch_img_data():
     
     return send_file("annotation.jpg", mimetype="image/jpeg")
 
+
+@app.route("/fetch_annotation_names", methods=["GET"])
+def fetch_annotation_names():
+    if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
+        os.mkdir(osp.join(CLIENT_IMAGES, "current"))
+
+    # Check if the "collectionName" header exists in the request
+    if 'ctgName' not in request.headers:
+        return 'Error: "ctgName" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'collectionName' not in request.headers:
+        return 'Error: "collectionName" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'imgIdx' not in request.headers:
+        return 'Error: "imgIdx" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'split' not in request.headers:
+        return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
+
+    # ctg_name = request.headers['ctgName']
+    # collection_name = request.headers['collectionName']
+    # img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
+    # split = request.headers['split']
     
+    # imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
+    # img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
+    # img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name)
+    # print(f"img_path: {img_path}")
+    # if not osp.exists(img_path):
+    #     return 'Error: the given image does not exist!'
+
+    ctg_name = request.headers['ctgName']
+    collection_name = request.headers['collectionName']
+    split = request.headers['split']
+    # print(f"the index requested was {request.headers["imgIdx"]}")
+    imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
+    imgs_list = [img_name for img_name in imgs_list if img_name.find(".pkl") == -1]
+    # equal number of pickle files and images
+    num_images = len(imgs_list)
+    img_name = get_file_name_by_idx(int(request.headers['imgIdx']), num_images)
+    img_name = [img_path for img_path in imgs_list if img_path.find(img_name) != -1][0]
+    img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name)
+    print(f"img_path: {img_path}")
+    if not osp.exists(img_path):
+        return 'Error: the given image does not exist!'
+
+    plain_img = cv2.imread(img_path)
+    assert plain_img is not None 
+
+    with open(osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name.split(".")[0] + ".pkl"), "rb") as f:
+        img_data = pickle.load(f) 
+
+    assert img_data is not None
+
+    annotation_names = list(img_data.keys()) 
+    res_json = {
+        "annotation_names": annotation_names
+    }
+
+    return jsonify(res_json), 200
 
 
 # Run the application

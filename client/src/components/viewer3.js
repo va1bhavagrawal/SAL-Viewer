@@ -82,27 +82,52 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
-    let { collectionName } = useParams()
+    let { collectionName, ctgName } = useParams()
     const [open, setOpen] = React.useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [annotation, setAnnotation] = useState(null)
+    const [annotationNames, setAnnotationNames] = useState(0);
+    const [annotation, setAnnotation] = useState("scribbles")
     const [loading, setLoading] = useState(true)
     const toggleDrawer = () => {
         setOpen(!open);
     };
+    console.log("annotation was set to " + annotation)
     const [imageSrc, setImageSrc] = useState("")
     useEffect(() => {
-        // Fetch categories from backend API
+        // Fetch annotation names from backend API
+        const fetchAnnotationNames = async () => {
+            try {
+                const annotationNamesResponse = await fetch("http://127.0.0.1:5000/fetch_annotation_names", {
+                    method: "GET",
+                    headers: {
+                        "ctgName": ctgName,
+                        "collectionName": collectionName,
+                        "imgIdx": currentIndex,
+                        "split": "train",
+                    }
+                });
+
+                if (!annotationNamesResponse.ok) {
+                    throw new Error("Failed to fetch annotation names");
+                }
+                const annotationNamesJSON = await annotationNamesResponse.json();
+                const annotationNames = annotationNamesJSON.annotation_names; 
+                setAnnotationNames(annotationNames)
+                console.log("Received annotation names:", annotationNames);
+            } catch (error) {
+                console.error("Error fetching annotation names:", error);
+            }
+        };
         const fetchAnnotation = async () => {
             try {
                 const response = await fetch("http://127.0.0.1:5000/fetch_annotation", {
                     method: "GET",
                     headers: {
-                        "ctgName": "palm_leaves",
-                        "collectionName": "TB",
-                        "imgIdx": "0",
+                        "ctgName": ctgName,
+                        "collectionName": collectionName,
+                        "imgIdx": currentIndex,
                         "split": "train",
-                        "annotation": "scribbles"
+                        "annotation": annotation
                     }
                 });
                 if (!response.ok) {
@@ -118,9 +143,11 @@ export default function Dashboard() {
             }
         };
 
+        fetchAnnotationNames();
         fetchAnnotation();
-    }, []);
+    }, [annotation, ctgName, collectionName, currentIndex]);
 
+    console.log("currentIndex is set to " + currentIndex)
 
 
     useEffect(() => {
@@ -136,17 +163,17 @@ export default function Dashboard() {
       }, [imageSrc]);
 
     const handleNext = () => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+        setCurrentIndex((prevIndex) => (prevIndex + 1)); 
     };
 
     const handlePrevious = () => {
-        setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+        setCurrentIndex((prevIndex) => (prevIndex - 1)); 
     };
 
 
-    // if (loading) {
-    //     return <div id="image-gallery">Loading...</div>;
-    // }
+    if (loading) {
+        return <div id="image-gallery">Loading...</div>;
+    }
 
     return (
         <ThemeProvider theme={defaultTheme}>
@@ -184,7 +211,7 @@ export default function Dashboard() {
                 <Drawer variant="permanent" open={true}>
                     {/* <Divider /> */}
                     <List component="nav">
-                        <MainListItems annotation={annotation} setAnnotation={setAnnotation} />
+                        <MainListItems annotation={annotation} setAnnotation={setAnnotation} annotationNames={annotationNames} />
                     </List>
                 </Drawer>
                 <Box
@@ -213,7 +240,7 @@ export default function Dashboard() {
                                         />
                                         <CardContent>
                                             <Typography variant="h6" component="div">
-                                                {"hello"}
+                                                {currentIndex}
                                             </Typography>
                                             {/* You can add more details about the collection here */}
                                         </CardContent>
