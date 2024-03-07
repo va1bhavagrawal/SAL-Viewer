@@ -100,7 +100,7 @@ export default function Dashboard() {
         // Fetch annotation names from backend API
         const fetchCollectionMetadata = async () => {
             try {
-                const response = await fetch("http://127.0.0.1:5000/fetch_collection_metadata", {
+                const response = await fetch("http://10.4.16.102:1510/fetch_collection_metadata", {
                     method: "GET",
                     headers: {
                         "ctgName": ctgName,
@@ -129,7 +129,7 @@ export default function Dashboard() {
         };
         const fetchAnnotation = async () => {
             try {
-                const response = await fetch("http://127.0.0.1:5000/fetch_annotation", {
+                const response = await fetch("http://10.4.16.102:1510/fetch_annotation", {
                     method: "GET",
                     headers: {
                         "ctgName": ctgName,

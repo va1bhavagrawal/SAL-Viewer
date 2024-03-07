@@ -1,4 +1,4 @@
-from flask import Flask, make_response, request, jsonify, send_file
+from flask import Flask, make_response, request, jsonify, send_file, g
 import PIL
 from PIL import Image
 import random
@@ -10,8 +10,12 @@ import cv2
 import numpy as np
 import pickle
 import sys
+MAX_PIXELS = 2e6
 sys.path.append("../..")
 from utils import *
+import pickle
+
+colors = None
 
 # some GLOBAL variables 
 """CHANGE THIS TO MANTHANA"""
@@ -28,6 +32,12 @@ datasets_list = os.listdir(DATASETS_DIR)
 # Create a Flask application
 app = Flask(__name__)
 CORS(app)
+
+
+# Before each request, initialize g.my_variable with the value of MY_GLOBAL_VARIABLE
+@app.before_request
+def before_request():
+    g.colors = app.config.get("COLORS")
 
 # Define a route and a corresponding view function
 """
@@ -69,13 +79,13 @@ def collections():
             if found:
                 continue
 
-            if file_extension == "png":
-                # img_png = Image.open(random_img_path)
-                # img_png.save(osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.jpg"))
-                img_png = cv2.imread(random_img_path)
-                cv2.imwrite(osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.jpg"), img_png)
-            else:
-                shutil.copy(random_img_path, osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.{file_extension}"))
+            img = cv2.imread(random_img_path)
+            n_pixels = img.shape[0] * img.shape[1]
+            if n_pixels > MAX_PIXELS:
+                scale_factor = MAX_PIXELS / n_pixels
+                new_size = (int(img.shape[1] * scale_factor), int(img.shape[0] * scale_factor))
+                img = cv2.resize(img, new_size)
+            cv2.imwrite(osp.join(CLIENT_IMAGES, "thumbnails", f"{dataset}.jpg"), img)
 
     # print(categories)
     response = jsonify({"categories": categories})
@@ -135,12 +145,28 @@ def fetch_annotation():
         # print(type(polygons))
         # print(polygons[0].dtype)
         # print(polygons[0].shape)
-        cv2.polylines(plain_img, polygons, True, (255, 0, 0), 3) 
+        for polygon_idx, polygon in enumerate(polygons):
+            color = g.colors[polygon_idx]
+            color = np.array(color).astype(np.int32)
+            color = color.tolist()
+            # print(f"color: {color}")
+            cv2.polylines(plain_img, [polygon], True, color, 3) 
         # cv2.imwrite(f"annotation.jpg", polygon_img)
         # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "current", "polygons.jpg"))
     if "scribbles" in annotations:
         scribbles = img_data["annotations"]["scribbles"]
-        cv2.polylines(plain_img, scribbles, False, (255, 0, 0), 2)
+        for scribble_idx, scribble in enumerate(scribbles):
+            color = g.colors[scribble_idx]
+            color = np.array(color).astype(np.int32)
+            color = color.tolist()
+            cv2.polylines(plain_img, [scribble], False, color, 3)
+        # cv2.polylines(plain_img, scribbles, False, (255, 0, 0), 2)
+
+    n_pixels = plain_img.shape[0] * plain_img.shape[1]
+    if n_pixels > MAX_PIXELS:
+        scale_factor = MAX_PIXELS / n_pixels
+        new_size = (int(plain_img.shape[1] * scale_factor), int(plain_img.shape[0] * scale_factor))
+        plain_img = cv2.resize(plain_img, new_size)
 
     cv2.imwrite(f"annotation.jpg", plain_img)
     # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
@@ -211,4 +237,7 @@ def fetch_collection_metadata():
 
 # Run the application
 if __name__ == '__main__':
-    app.run(debug=True)
+    with open(f"colors.pkl", "rb") as f:
+        colors = pickle.load(f)
+    app.config["COLORS"] = colors
+    app.run(host="10.4.16.102", port=1510)
