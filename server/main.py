@@ -139,6 +139,9 @@ def fetch_annotation():
 
     assert img_data is not None
 
+    annotations = annotations.strip()
+    annotations = annotations.split(",")
+    annotations = [annotation for annotation in annotations if len(annotation) > 0]
     if "polygons" in annotations:
         # polygon_img = plain_img.copy()
         polygons = img_data["annotations"]["polygons"]
@@ -146,17 +149,20 @@ def fetch_annotation():
         # print(polygons[0].dtype)
         # print(polygons[0].shape)
         for polygon_idx, polygon in enumerate(polygons):
-            color = g.colors[polygon_idx]
+            color = g.colors[polygon_idx % len(g.colors)]
             color = np.array(color).astype(np.int32)
             color = color.tolist()
             # print(f"color: {color}")
             cv2.polylines(plain_img, [polygon], True, color, 3) 
         # cv2.imwrite(f"annotation.jpg", polygon_img)
         # shutil.copy("polygons.jpg", osp.join(CLIENT_IMAGES, "current", "polygons.jpg"))
-    if "scribbles" in annotations:
-        scribbles = img_data["annotations"]["scribbles"]
+    for annotation in annotations:
+        if annotation == "polygons":
+            # we have already dealt with polygons above
+            continue
+        scribbles = img_data["annotations"][annotation]
         for scribble_idx, scribble in enumerate(scribbles):
-            color = g.colors[scribble_idx]
+            color = g.colors[scribble_idx % len(g.colors)]
             color = np.array(color).astype(np.int32)
             color = color.tolist()
             cv2.polylines(plain_img, [scribble], False, color, 3)
