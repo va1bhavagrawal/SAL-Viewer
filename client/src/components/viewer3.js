@@ -20,6 +20,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { MainListItems, SplitItems } from './listItems';
+import Button from '@mui/material/Button';
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.min.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -80,6 +81,8 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
+
+
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
@@ -91,16 +94,119 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
     const [split, setSplit] = useState("train")
+    const [reAnnotate, setReAnnotate] = useState(false)
+    const [remove, setRemove] = useState(false)
     const toggleDrawer = () => {
         setOpen(!open);
     };
     // console.log("annotation was set to " + annotation)
     const [imageSrc, setImageSrc] = useState("")
+
+    const removeFromRemove = async () => {
+        try {
+            const response = await fetch("http://10.4.16.102:1510/remove_from_remove", {
+                method: "GET",
+                headers: {
+                    "ctgName": ctgName,
+                    "collectionName": collectionName,
+                    "imgIdx": currentIndex,
+                    "split": split,
+                }
+            });
+            if (!response.ok) {
+                throw new Error("Failed to send to reannotate");
+            }
+            const blob = await response.blob()
+            setRemove(false)
+            setLoading(false)
+            // console.log("received image")
+        } catch (error) {
+            console.error("Failed to send to reannotate", error);
+            setLoading(false);
+        }
+    };
+
+    const sendToRemove = async () => {
+        try {
+            const response = await fetch("http://10.4.16.102:1510/send_to_remove", {
+                method: "GET",
+                headers: {
+                    "ctgName": ctgName,
+                    "collectionName": collectionName,
+                    "imgIdx": currentIndex,
+                    "split": split,
+                }
+            });
+            if (!response.ok) {
+                throw new Error("Failed to send to reannotate");
+            }
+            const blob = await response.blob()
+            setRemove(true)
+            setLoading(false)
+            // console.log("received image")
+        } catch (error) {
+            console.error("Failed to send to reannotate", error);
+            setLoading(false);
+        }
+    };
+
+
+
+    const removeFromReAnnotate = async () => {
+        try {
+            const response = await fetch("http://10.4.16.102:1510/remove_from_reannotate", {
+                method: "GET",
+                headers: {
+                    "ctgName": ctgName,
+                    "collectionName": collectionName,
+                    "imgIdx": currentIndex,
+                    "split": split,
+                }
+            });
+            if (!response.ok) {
+                throw new Error("Failed to send to reannotate");
+            }
+            const blob = await response.blob()
+            setReAnnotate(false)
+            setLoading(false)
+            // console.log("received image")
+        } catch (error) {
+            console.error("Failed to send to reannotate", error);
+            setLoading(false);
+        }
+    };
+
+    const sendToReAnnotate = async () => {
+        try {
+            const response = await fetch("http://10.4.16.102:1510/send_to_reannotate", {
+                method: "GET",
+                headers: {
+                    "ctgName": ctgName,
+                    "collectionName": collectionName,
+                    "imgIdx": currentIndex,
+                    "split": split,
+                }
+            });
+            if (!response.ok) {
+                throw new Error("Failed to send to reannotate");
+            }
+            const blob = await response.blob()
+            setReAnnotate(true)
+            setLoading(false)
+            // console.log("received image")
+        } catch (error) {
+            console.error("Failed to send to reannotate", error);
+            setLoading(false);
+        }
+    };
+
+
     useEffect(() => {
         // Fetch annotation names from backend API
-        const fetchCollectionMetadata = async () => {
+        const fetchMetadata = async () => {
+            setLoading(true)
             try {
-                const response = await fetch("http://10.4.16.102:1510/fetch_collection_metadata", {
+                const response = await fetch("http://10.4.16.102:1510/fetch_metadata", {
                     method: "GET",
                     headers: {
                         "ctgName": ctgName,
@@ -117,10 +223,14 @@ export default function Dashboard() {
                 if (responseJSON.splitNotFound === true) {
                     setAnnotationNames([])
                     setNumImages(0)
+                    setReAnnotate(false)
+                    setRemove(false)
                 }
                 else {
                     setAnnotationNames(responseJSON.annotation_names);
                     setNumImages(responseJSON.num_images)
+                    setReAnnotate(responseJSON.reannotate)
+                    setRemove(responseJSON.remove)
                 }
                 // console.log("Received annotation names:", annotationNames);
             } catch (error) {
@@ -128,6 +238,7 @@ export default function Dashboard() {
             }
         };
         const fetchAnnotation = async () => {
+            setLoading(true)
             try {
                 const response = await fetch("http://10.4.16.102:1510/fetch_annotation", {
                     method: "GET",
@@ -151,10 +262,10 @@ export default function Dashboard() {
                 setLoading(false);
             }
         };
-
-        fetchCollectionMetadata();
+        fetchMetadata();
         fetchAnnotation();
-    }, [annotations, split, ctgName, collectionName, currentIndex]);
+        console.log("inside useEffect, reAnnotate is set to", reAnnotate)
+    }, [annotations, split, ctgName, collectionName, currentIndex, reAnnotate, remove]);
 
     // console.log("currentIndex is set to " + currentIndex)
 
@@ -181,7 +292,7 @@ export default function Dashboard() {
 
     const handlePrevious = () => {
         let nextIndex = currentIndex - 1
-        if (nextIndex == -1) {
+        if (nextIndex === -1) {
             console.log("numImages is " + numImages)
             nextIndex = parseInt(numImages) - 1
             console.log("updated nextIndex to " + nextIndex)
@@ -259,6 +370,37 @@ export default function Dashboard() {
                             <ArrowBackIcon item xs={1} onClick={handlePrevious} style={{ cursor: 'pointer' }} />
                             <Grid item xs={10} justifyContent="center">
                                 <Card>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px' }}>
+                                        <Button variant="contained" disabled={remove} color={reAnnotate == false ? "warning" : "primary"} onClick={() => {
+                                            if (reAnnotate) {
+                                                removeFromReAnnotate()
+                                            }
+                                            else {
+                                                if (remove === true) {
+                                                    removeFromRemove()
+                                                }
+                                                sendToReAnnotate()
+                                            }
+                                        }}>
+                                            {reAnnotate == false ? "Add to Re-Annotation List" : "Remove From Re-Annotation List"}
+                                        </Button>
+                                        {remove && <Typography variant="h6" color="red">DELETED</Typography>}
+                                        {reAnnotate && <Typography variant="h6" color="orange">APPLIED FOR REANNOTATION</Typography>}
+                                        <Button variant="contained" color={remove == false ? "error" : "primary"} onClick={() => {
+                                            if (remove) {
+                                                removeFromRemove()
+                                            }
+                                            else {
+                                                if (reAnnotate === true) {
+                                                    removeFromReAnnotate()
+                                                }
+                                                sendToRemove()
+                                            }
+                                        }}>
+                                            {remove == false ? "Add to Delete List" : "Remove From Delete List"}
+                                        </Button>
+
+                                    </Box>
                                     <CardActionArea id="image-gallery" style={{ position: 'relative' }}>
                                         <CardMedia
                                             component="img"

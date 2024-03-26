@@ -8,7 +8,7 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<ImageCollectionGallery />} />
-                <Route path="/collection/:ctgName/:collectionName" element={<ViewerPage/>} />
+                <Route path="/collection/:ctgName/:collectionName/:idx" element={<ViewerPage/>} />
             </Routes>
         </BrowserRouter>
     );

@@ -52,7 +52,7 @@ const HomePage = () => {
                                 <Card>
                                     <CardActionArea
                                         component={Link}
-                                        to={`/collection/${category.title}/${collection.title}`}
+                                        to={`/collection/${category.title}/${collection.title}/0`}
                                     >
                                         <CardMedia
                                             component="img"
