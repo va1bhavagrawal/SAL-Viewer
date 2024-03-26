@@ -15,8 +15,8 @@ import Badge from '@mui/material/Badge';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
-import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
+import { Link } from "react-router-dom"; // Assuming you're using React Router for navigation
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { MainListItems, SplitItems } from './listItems';
@@ -86,9 +86,9 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
-    let { collectionName, ctgName } = useParams()
+    let { collectionName, ctgName, currentIndex } = useParams() 
+    currentIndex = parseInt(currentIndex)
     const [open, setOpen] = React.useState(true);
-    const [currentIndex, setCurrentIndex] = useState(0);
     const [annotationNames, setAnnotationNames] = useState(0);
     const [annotations, setAnnotations] = useState([])
     const [loading, setLoading] = useState(true)
@@ -149,8 +149,6 @@ export default function Dashboard() {
             setLoading(false);
         }
     };
-
-
 
     const removeFromReAnnotate = async () => {
         try {
@@ -264,7 +262,6 @@ export default function Dashboard() {
         };
         fetchMetadata();
         fetchAnnotation();
-        console.log("inside useEffect, reAnnotate is set to", reAnnotate)
     }, [annotations, split, ctgName, collectionName, currentIndex, reAnnotate, remove]);
 
     // console.log("currentIndex is set to " + currentIndex)
@@ -282,24 +279,15 @@ export default function Dashboard() {
         }
     }, [imageSrc]);
 
-    const handleNext = () => {
-        let nextIndex = currentIndex + 1
-        if (nextIndex >= numImages) {
-            nextIndex = 0
-        }
-        setCurrentIndex(nextIndex)
-    };
+    let nextIndex = currentIndex + 1
+    if (nextIndex >= numImages) {
+        nextIndex = 0
+    }
 
-    const handlePrevious = () => {
-        let nextIndex = currentIndex - 1
-        if (nextIndex === -1) {
-            console.log("numImages is " + numImages)
-            nextIndex = parseInt(numImages) - 1
-            console.log("updated nextIndex to " + nextIndex)
-        }
-        setCurrentIndex(nextIndex)
-    };
-
+    let prevIndex = currentIndex - 1
+    if (prevIndex === -1) {
+        prevIndex = parseInt(numImages) - 1
+    }
 
     if (loading) {
         return <div id="image-gallery">Loading...</div>;
@@ -367,7 +355,10 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3} justifyContent="center">
-                            <ArrowBackIcon item xs={1} onClick={handlePrevious} style={{ cursor: 'pointer' }} />
+                            <Link to={`/collection/${ctgName}/${collectionName}/${prevIndex}`}>
+                                <ArrowBackIcon item xs={1} style={{ cursor: 'pointer' }} >
+                                </ArrowBackIcon>
+                            </Link>
                             <Grid item xs={10} justifyContent="center">
                                 <Card>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px' }}>
@@ -416,7 +407,10 @@ export default function Dashboard() {
                                     </CardActionArea>
                                 </Card>
                             </Grid>
-                            <ArrowForwardIcon item xs={1} onClick={handleNext} style={{ cursor: 'pointer' }} />
+                            <Link to={`/collection/${ctgName}/${collectionName}/${nextIndex}`}>
+                                <ArrowForwardIcon item xs={1} style={{ cursor: 'pointer' }} >
+                                </ArrowForwardIcon>
+                            </Link>
                         </Grid>
                     </Container>
                 </Box>
