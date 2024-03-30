@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Checkbox } from '@mui/material';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
 import { useParams } from "react-router-dom"
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -86,10 +89,11 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
-    let { collectionName, ctgName, currentIndex } = useParams() 
+    let { collectionName, ctgName, currentIndex } = useParams()
     currentIndex = parseInt(currentIndex)
     const [open, setOpen] = React.useState(true);
     const [annotationNames, setAnnotationNames] = useState(0);
+    const [highRes, setHighRes] = useState(false)
     const [annotations, setAnnotations] = useState([])
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
@@ -245,7 +249,8 @@ export default function Dashboard() {
                         "collectionName": collectionName,
                         "imgIdx": currentIndex,
                         "split": split,
-                        "annotation": annotations
+                        "annotation": annotations,
+                        "highRes": highRes,
                     }
                 });
                 if (!response.ok) {
@@ -262,7 +267,7 @@ export default function Dashboard() {
         };
         fetchMetadata();
         fetchAnnotation();
-    }, [annotations, split, ctgName, collectionName, currentIndex, reAnnotate, remove]);
+    }, [highRes, annotations, split, ctgName, collectionName, currentIndex, reAnnotate, remove]);
 
     // console.log("currentIndex is set to " + currentIndex)
 
@@ -324,6 +329,19 @@ export default function Dashboard() {
                         >
                             {collectionName}
                         </Typography>
+                        <List component="nav">
+                            <ListSubheader component="div" style={{ textAlign: 'center' }}>
+                                <ListItemButton onClick={() => {
+                                    setHighRes(!highRes)
+                                }}>
+                                    <ListItemText primary={"High-Resolution"} />
+                                    <Checkbox
+                                        checked={highRes}
+                                    />
+                                </ListItemButton >
+                            </ListSubheader>
+                            <Divider />
+                        </List>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant="permanent" open={true}>

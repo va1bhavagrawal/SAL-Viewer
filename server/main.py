@@ -112,11 +112,19 @@ def fetch_annotation():
         return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
     if 'annotation' not in request.headers:
         return 'Error: "annotation" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'highres' not in request.headers:
+        return 'Error: "highres" header not found', 400  # Return a 400 Bad Request status if the header is missing
+
 
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
     annotations = request.headers['annotation']
     split = request.headers['split']
+    highres = request.headers['highres']
+    if highres == "false":
+        highres = False
+    else:
+        highres = True
     # print(f"the index requested was {request.headers["imgIdx"]}")
     if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split)):
        return send_file("notfound.jpg", mimetype="image/jpeg") 
@@ -194,7 +202,8 @@ def fetch_annotation():
     if n_pixels > MAX_PIXELS:
         scale_factor = MAX_PIXELS / n_pixels
         new_size = (int(plain_img.shape[1] * scale_factor), int(plain_img.shape[0] * scale_factor))
-        plain_img = cv2.resize(plain_img, new_size)
+        if not highres:
+            plain_img = cv2.resize(plain_img, new_size)
 
     cv2.imwrite(f"annotation.jpg", plain_img)
     # shutil.copy("scribbles.jpg", osp.join(CLIENT_IMAGES, "current", "scribbles.jpg"))
