@@ -115,10 +115,12 @@ def fetch_annotation():
     if 'highres' not in request.headers:
         return 'Error: "highres" header not found', 400  # Return a 400 Bad Request status if the header is missing
 
-
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
     annotations = request.headers['annotation']
+    print(f"======================================")
+    print(f"{annotations = }")
+    print(f"======================================")
     split = request.headers['split']
     highres = request.headers['highres']
     if highres == "false":

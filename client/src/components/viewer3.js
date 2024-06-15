@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Checkbox } from '@mui/material';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
+import { Radio, Checkbox } from '@mui/material';
 import { useParams } from "react-router-dom"
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -34,9 +34,6 @@ import {
     CardContent,
     CardMedia
 } from "@mui/material";
-
-const images = ["/images/sample.jpg", "/images/sample2.jpg"]; // Array of image URLs
-
 
 const drawerWidth = 240;
 
@@ -89,7 +86,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const defaultTheme = createTheme();
 
 export default function Dashboard() {
-    let { collectionName, ctgName, currentIndex } = useParams()
+    let { collectionName, ctgName, split, currentIndex } = useParams()
     currentIndex = parseInt(currentIndex)
     const [open, setOpen] = React.useState(true);
     const [annotationNames, setAnnotationNames] = useState(0);
@@ -97,7 +94,6 @@ export default function Dashboard() {
     const [annotations, setAnnotations] = useState([])
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
-    const [split, setSplit] = useState("train")
     const [reAnnotate, setReAnnotate] = useState(false)
     const [remove, setRemove] = useState(false)
     const toggleDrawer = () => {
@@ -354,7 +350,27 @@ export default function Dashboard() {
                         <ListSubheader component="div" style={{ textAlign: 'center' }}>
                             Splits
                         </ListSubheader>
-                        <SplitItems split={split} setSplit={setSplit} />
+                        <Link to={`/${ctgName}/${collectionName}/train/${currentIndex}`}>
+                            <ListItemButton key={0}> 
+                                <ListItemText primary="train" />
+                                <Radio checked={split === "train"} onChange={() => {
+                                }} />
+                            </ListItemButton>
+                        </Link>
+                        <Link to={`/${ctgName}/${collectionName}/val/${currentIndex}`}>
+                            <ListItemButton key={1}>
+                                <ListItemText primary="val" />
+                                <Radio checked={split === "val"} onChange={() => {
+                                }} />
+                            </ListItemButton>
+                        </Link>
+                        <Link to={`/${ctgName}/${collectionName}/test/${currentIndex}`}>
+                            <ListItemButton key={2}>
+                                <ListItemText primary="test" />
+                                <Radio checked={split === "test"} onChange={() => {
+                                }} />
+                            </ListItemButton>
+                        </Link>
                     </List>
                     <Divider />
                 </Drawer>
@@ -373,7 +389,7 @@ export default function Dashboard() {
                     <Toolbar />
                     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                         <Grid container spacing={3} justifyContent="center">
-                            <Link to={`/collection/${ctgName}/${collectionName}/${prevIndex}`}>
+                            <Link to={`/${ctgName}/${collectionName}/${split}/${prevIndex}`}>
                                 <ArrowBackIcon item xs={1} style={{ cursor: 'pointer' }} >
                                 </ArrowBackIcon>
                             </Link>
@@ -391,10 +407,18 @@ export default function Dashboard() {
                                                 sendToReAnnotate()
                                             }
                                         }}>
-                                            {reAnnotate == false ? "Add to Re-Annotation List" : "Remove From Re-Annotation List"}
+                                            {reAnnotate == false ? "Mark for re-annotation" : "unmark from re-annotation"}
                                         </Button>
+                                        <Link to="/another-component" style={{ textDecoration: 'none' }}>
+                                            <Button variant="contained" disabled={remove} color="primary" onClick={() => {
+
+                                            }}>
+                                                ANNOTATE!
+                                            </Button>
+                                        </Link>
+
                                         {remove && <Typography variant="h6" color="red">DELETED</Typography>}
-                                        {reAnnotate && <Typography variant="h6" color="orange">APPLIED FOR REANNOTATION</Typography>}
+                                        {reAnnotate && <Typography variant="h6" color="orange">MARKED FOR RE-ANNOTATION</Typography>}
                                         <Button variant="contained" color={remove == false ? "error" : "primary"} onClick={() => {
                                             if (remove) {
                                                 removeFromRemove()
@@ -406,7 +430,7 @@ export default function Dashboard() {
                                                 sendToRemove()
                                             }
                                         }}>
-                                            {remove == false ? "Add to Delete List" : "Remove From Delete List"}
+                                            {remove == false ? "delete" : "undelete"}
                                         </Button>
 
                                     </Box>
@@ -425,7 +449,7 @@ export default function Dashboard() {
                                     </CardActionArea>
                                 </Card>
                             </Grid>
-                            <Link to={`/collection/${ctgName}/${collectionName}/${nextIndex}`}>
+                            <Link to={`/${ctgName}/${collectionName}/${split}/${nextIndex}`}>
                                 <ArrowForwardIcon item xs={1} style={{ cursor: 'pointer' }} >
                                 </ArrowForwardIcon>
                             </Link>
