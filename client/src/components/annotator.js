@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Line, Circle, Image as KonvaImage } from 'react-konva';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { useParams } from "react-router-dom"
+import { useParams } from "react-router-dom";
 
 const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
   const [image, setImage] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
   const [scribbles, setScribbles] = useState([]);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
         img.src = URL.createObjectURL(blob);
         img.onload = () => {
           setImage(img);
-          URL.revokeObjectURL(img.src); // Clean up the object URL after the image is loaded
+          URL.revokeObjectURL(img.src);
         };
       } catch (error) {
         console.error("Error fetching image:", error);
@@ -46,73 +46,84 @@ const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
           }
         });
         if (!response.ok) {
-          throw new Error("failed to load existing annotation!");
+          throw new Error("Failed to load existing annotation!");
         }
-        const data = await response.json()
-        console.log("the obtained scribbles are " + data.scribbles)
-        setScribbles(data.scribbles)
-        setLoading(false)
-        // console.log("received image")
+        const data = await response.json();
+        console.log("The obtained scribbles are " + data.scribbles);
+        setScribbles(data.scribbles);
+        setLoading(false);
       } catch (error) {
         console.error("Failed to send to reannotate", error);
         setLoading(false);
       }
     };
 
-
     fetchImage();
     fetchScribbles();
-  }, []);
+  }, [ctgName, collectionName, currentIndex, split]);
 
-  return [image, loading, scribbles]; // Return loading state
+  return [image, loading, scribbles];
 };
 
 const ImageCanvas = () => {
-  let { collectionName, ctgName, split, currentIndex } = useParams()
+  let { collectionName, ctgName, split, currentIndex } = useParams();
   const [image, loading, scribbles] = useImageFromUrl({ ctgName, collectionName, currentIndex, split });
   const [polylines, setPolylines] = useState([]);
   const [currentPolyline, setCurrentPolyline] = useState([]);
   const [selectedPolyline, setSelectedPolyline] = useState(null);
   const [mousePosition, setMousePosition] = useState(null);
-  let displayWidth = 0;
-  let displayHeight = 0;
-  let scaleFactor = 0;
-  if (image !== null && image.width > image.height) {
-    displayWidth = 5000;
-    displayHeight = (image.height / image.width) * displayWidth;
-    scaleFactor = displayWidth / image.width
-  } else if (image !== null) {
-    displayHeight = 5000;
-    displayWidth = (image.width / image.height) * displayHeight;
-    scaleFactor = displayHeight / image.width
-  }
-  if (image !== null) {
-    console.log("displayed and scaled: " + displayHeight / scaleFactor, displayWidth / scaleFactor)
-    console.log("original: " + image.height, image.width)
-    console.log("image.x = " + image.x)
-    console.log("image.y = " + image.y)
-  }
-
   const stageRef = useRef();
-
-  // useEffect(() => {
-  //   console.log("effect again!")
-  //   setPolylines(scribbles)
-  // }, [scribbles]); 
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (loading) return; // Disable annotation while loading
+      if (loading) return;
+
       if (e.key === 'Escape') {
         let newPolyLines = [...polylines, currentPolyline];
         setPolylines(newPolyLines);
         setCurrentPolyline([]);
         setMousePosition(null);
       }
+
       if (e.key === 'Delete') {
         if (selectedPolyline !== null) {
           handleDeletePolyline();
         }
+      }
+
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        sendPostRequest();
+      }
+    };
+
+    const sendPostRequest = async () => {
+      const data = {
+        ctgName,
+        collectionName,
+        split,
+        currentIndex,
+        scribbles: polylines,
+        scaleFactor,
+      };
+
+      try {
+        const response = await fetch('http://10.4.16.102:1510/save_scribbles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save scribbles');
+        }
+
+        const responseData = await response.json();
+        console.log('Response:', responseData);
+      } catch (error) {
+        console.error('Error:', error);
       }
     };
 
@@ -124,32 +135,32 @@ const ImageCanvas = () => {
   }, [currentPolyline, polylines, selectedPolyline, loading]);
 
   const handleMouseDown = (e) => {
-    if (loading || e.evt.button !== 0) return; // Disable annotation while loading or if not left click
+    if (loading || e.evt.button !== 0) return;
     const stage = stageRef.current.getStage();
     const point = stage.getPointerPosition();
-    console.log(point)
+    console.log(point);
     setCurrentPolyline([...currentPolyline, point]);
   };
 
   const handleMouseMove = (e) => {
-    if (loading) return; // Disable annotation while loading
+    if (loading) return;
     const stage = stageRef.current.getStage();
     const point = stage.getPointerPosition();
-    console.log(point)
+    console.log(point);
     setMousePosition(point);
   };
 
   const handleMouseUp = () => {
-    if (loading || currentPolyline.length === 0) return; // Disable annotation while loading
+    if (loading || currentPolyline.length === 0) return;
   };
 
   const handlePolylineClick = (index) => {
-    if (loading) return; // Disable annotation while loading
+    if (loading) return;
     setSelectedPolyline(index);
   };
 
   const handleDeletePolyline = () => {
-    if (loading || selectedPolyline === null) return; // Disable annotation while loading
+    if (loading || selectedPolyline === null) return;
     const newPolylines = polylines.filter((_, index) => index !== selectedPolyline);
     setPolylines(newPolylines);
   };
@@ -157,6 +168,25 @@ const ImageCanvas = () => {
   let currentLinePoints = currentPolyline.flat();
   if (mousePosition && currentPolyline.length > 0) {
     currentLinePoints = [...currentLinePoints, mousePosition.x, mousePosition.y];
+  }
+
+  let displayWidth = 0;
+  let displayHeight = 0;
+  let scaleFactor = 0;
+  if (image !== null && image.width > image.height) {
+    displayWidth = 5000;
+    displayHeight = (image.height / image.width) * displayWidth;
+    scaleFactor = displayWidth / image.width;
+  } else if (image !== null) {
+    displayHeight = 5000;
+    displayWidth = (image.width / image.height) * displayHeight;
+    scaleFactor = displayHeight / image.height;
+  }
+  if (image !== null) {
+    console.log("displayed and scaled: " + displayHeight / scaleFactor, displayWidth / scaleFactor);
+    console.log("original: " + image.height, image.width);
+    console.log("image.x = " + image.x);
+    console.log("image.y = " + image.y);
   }
 
   return (
@@ -188,7 +218,7 @@ const ImageCanvas = () => {
                   <React.Fragment key={index}>
                     <Line
                       points={polyline.flatMap(p => [p.x, p.y])}
-                      stroke={selectedPolyline == index ? "yellow" : "red"}
+                      stroke={selectedPolyline === index ? "yellow" : "red"}
                       strokeWidth={7}
                       lineCap="round"
                       lineJoin="round"
@@ -204,7 +234,7 @@ const ImageCanvas = () => {
                         x={point.x}
                         y={point.y}
                         radius={10}
-                        fill={selectedPolyline == index ? "yellow" : "red"}
+                        fill={selectedPolyline === index ? "yellow" : "red"}
                         onClick={(e) => {
                           if (e.evt.button === 1) {
                             handlePolylineClick(index);

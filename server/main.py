@@ -92,6 +92,123 @@ def collections():
     return response, 200
     # return 'Hello, World!'
 
+
+
+@app.route("/fetch_scribbles", methods=["GET"])
+def fetch_scribbles():
+    if not osp.exists(osp.join(CLIENT_IMAGES, "current")):
+        os.mkdir(osp.join(CLIENT_IMAGES, "current"))
+
+    # Check if the "collectionName" header exists in the request
+    if 'ctgName' not in request.headers:
+        return 'Error: "ctgName" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'collectionName' not in request.headers:
+        return 'Error: "collectionName" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'imgIdx' not in request.headers:
+        return 'Error: "imgIdx" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    if 'split' not in request.headers:
+        return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
+
+    def downsample_line(line, max_points=15):
+        if len(line) <= max_points:
+            return line
+        indices = np.linspace(0, len(line) - 1, max_points, dtype=int)
+        return line[indices]
+
+    ctg_name = request.headers['ctgName']
+    collection_name = request.headers['collectionName']
+    split = request.headers['split']
+    # print(f"the index requested was {request.headers["imgIdx"]}")
+    if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split)):
+       return send_file("notfound.jpg", mimetype="image/jpeg") 
+
+    imgs_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split))
+    imgs_list = [osp.join(DATASETS_DIR, ctg_name, collection_name, split, img_name) for img_name in imgs_list]
+    # if reannotate and remove folders do not exist, then create them
+    if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "remove")):
+        os.mkdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "remove"))
+    if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "reannotate")):
+        os.mkdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "reannotate"))
+
+    remove_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "remove"))
+    remove_list = [osp.join(DATASETS_DIR, ctg_name, collection_name, split, "remove", img_name) for img_name in remove_list]
+    reannotate_list = os.listdir(osp.join(DATASETS_DIR, ctg_name, collection_name, split, "reannotate"))
+    reannotate_list = [osp.join(DATASETS_DIR, ctg_name, collection_name, split, "reannotate", img_name) for img_name in reannotate_list]
+    imgs_list = imgs_list + reannotate_list + remove_list
+
+    imgs_list = sorted([img_path for img_path in imgs_list if img_path.find(".jpg") != -1])
+    remove_list = sorted([img_path for img_path in remove_list if img_path.find(".jpg") != -1])
+    reannotate_list = sorted([img_path for img_path in reannotate_list if img_path.find(".jpg") != -1])
+    # equal number of pickle files and images
+    num_images = len(imgs_list)
+    img_name = get_file_name_by_idx(int(request.headers['imgIdx']))
+    img_name = img_name + ".jpg"
+    img_path = [img_path for img_path in imgs_list if img_path.find(img_name) != -1]
+    assert len(img_path) == 1
+    img_path = img_path[0]
+    # print(f"img_path: {img_path}")
+    if not osp.exists(img_path):
+        return 'Error: the given image does not exist!'
+
+    pkl_path = img_path.replace(".jpg", ".pkl")
+    with open(pkl_path, "rb") as f:
+        img_data = pickle.load(f) 
+
+    assert img_data is not None
+
+    scribbles = img_data["annotations"]["scribbles"]
+    scribbles_ = []
+    for scribble in scribbles:
+        scribbles_.append(scribble.tolist())
+
+    scribbles = scribbles_
+    scribbles = [downsample_line(scribble) for scribble in scribbles]
+    response = jsonify({"scribbles": scribbles}) 
+    return response, 200
+
+
+@app.route('/save_scribbles', methods=['POST'])
+def save_scribbles():
+    print(f"received!")
+    if request.is_json:
+        data = request.get_json()
+        ctg_name = data.get('ctgName')
+        collection_name = data.get('collectionName')
+        current_index = data.get('currentIndex')
+        split = data.get('split')
+        scribbles = data.get('scribbles', [])
+        scale_factor = data.get('scaleFactor', 1.0)
+        # Here you can process the scribbles and other parameters
+        # print(f'Received scribbles: {scribbles}')
+        # print(f'ctgName: {ctg_name}, collectionName: {collection_name}, currentIndex: {current_index}, split: {split}, scale_factor: {scale_factor}')
+        # Example: Save to a file
+        print(f"============== RECEIVED {scale_factor} ==============")
+        if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".pkl")):
+            res_json = {
+                "message": "image with the given attributes cannot be found",
+            }
+            return jsonify(res_json), 403
+        scribbles_ = []
+        for scribble in scribbles:
+            scribble_ = [[pt["x"], pt["y"]] for pt in scribble]
+            scribbles_.append((np.array(scribble_) / float(scale_factor)).astype(np.int32))
+        scribbles = scribbles_
+        pkl_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".pkl")
+        img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".jpg")
+        img = cv2.imread(img_path)
+        print(img.shape)
+        with open(pkl_path, "rb") as f:
+            pkl_data = pickle.load(f)
+        pkl_data["annotations"]["scribbles"] = scribbles
+        with open(pkl_path, "wb") as f:
+            pickle.dump(pkl_data, f)
+
+    res_json = {
+        "success": True,
+    }
+
+    return jsonify(res_json), 200
+
 """
 returns:
 * the list of available annotations
@@ -118,9 +235,6 @@ def fetch_annotation():
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
     annotations = request.headers['annotation']
-    print(f"======================================")
-    print(f"{annotations = }")
-    print(f"======================================")
     split = request.headers['split']
     highres = request.headers['highres']
     if highres == "false":
@@ -195,8 +309,12 @@ def fetch_annotation():
             color = np.array(color).astype(np.int32)
             color = color.tolist()
             # plain_img[scribble[:, 1], scribble[:, 0]] = color
-            for pt in scribble:
-                cv2.circle(plain_img, pt, 3, color, 3)
+            if len(scribble) < 30:
+                # must do polylines
+                cv2.polylines(plain_img, [scribble], False, color, 3)
+            else:
+                for pt in scribble:
+                    cv2.circle(plain_img, pt, 3, color, 3)
             # cv2.polylines(plain_img, [scribble], False, color, 3)
         # cv2.polylines(plain_img, scribbles, False, (255, 0, 0), 2)
 
