@@ -89,8 +89,6 @@ const ImageCanvas = () => {
   if (image !== null) {
     console.log("displayed and scaled: " + displayHeight / scaleFactor, displayWidth / scaleFactor)
     console.log("original: " + image.height, image.width)
-    console.log("image.x = " + image.x)
-    console.log("image.y = " + image.y)
   }
 
   const stageRef = useRef();

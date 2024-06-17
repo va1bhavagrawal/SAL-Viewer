@@ -1,0 +1,17 @@
+.canvas-container {
+  margin: 0;
+  padding: 0;
+  width: 100vw; /* Full viewport width */
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden; /* Ensure no overflow */
+}
+
+.konva-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+}

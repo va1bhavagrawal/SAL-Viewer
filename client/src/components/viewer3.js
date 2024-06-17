@@ -409,7 +409,7 @@ export default function Dashboard() {
                                         }}>
                                             {reAnnotate == false ? "Mark for re-annotation" : "unmark from re-annotation"}
                                         </Button>
-                                        <Link to="/another-component" style={{ textDecoration: 'none' }}>
+                                        <Link to={`/annotate/${ctgName}/${collectionName}/${split}/${currentIndex}`} style={{ textDecoration: 'none' }}>
                                             <Button variant="contained" disabled={remove} color="primary" onClick={() => {
 
                                             }}>
