@@ -91,7 +91,7 @@ export default function Dashboard() {
     const [open, setOpen] = React.useState(true);
     const [annotationNames, setAnnotationNames] = useState(0);
     const [highRes, setHighRes] = useState(false)
-    const [annotations, setAnnotations] = useState([])
+    const [annotations, setAnnotations] = useState("")
     const [loading, setLoading] = useState(true)
     const [numImages, setNumImages] = useState(0)
     const [reAnnotate, setReAnnotate] = useState(false)

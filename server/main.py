@@ -108,16 +108,20 @@ def fetch_scribbles():
         return 'Error: "imgIdx" header not found', 400  # Return a 400 Bad Request status if the header is missing
     if 'split' not in request.headers:
         return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
+    # if 'scaleFactor' not in request.headers:
+    #     return 'Error: "split" header not found', 400  # Return a 400 Bad Request status if the header is missing
 
     def downsample_line(line, max_points=15):
         if len(line) <= max_points:
             return line
         indices = np.linspace(0, len(line) - 1, max_points, dtype=int)
+        line = np.array(line).astype(np.int32)
         return line[indices]
 
     ctg_name = request.headers['ctgName']
     collection_name = request.headers['collectionName']
     split = request.headers['split']
+    # scale_factor = request.headers['scaleFactor']
     # print(f"the index requested was {request.headers["imgIdx"]}")
     if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split)):
        return send_file("notfound.jpg", mimetype="image/jpeg") 
@@ -156,6 +160,18 @@ def fetch_scribbles():
 
     assert img_data is not None
 
+    img = cv2.imread(img_path)
+    scale_factor = 0
+    if (img.shape[1] > img.shape[0]):
+        display_width = 5000
+        display_height = (img.shape[0] / img.shape[1]) * display_width
+        scale_factor = display_width / img.shape[1]
+    else:
+        display_height = 5000
+        display_width = (img.shape[1] / img.shape[0]) * display_height
+        scale_factor = display_height / img.shape[0]
+    
+
     scribbles = img_data["annotations"]["scribbles"]
     scribbles_ = []
     for scribble in scribbles:
@@ -163,6 +179,11 @@ def fetch_scribbles():
 
     scribbles = scribbles_
     scribbles = [downsample_line(scribble) for scribble in scribbles]
+    scribbles_ = []
+    for scribble in scribbles:
+        scribble = [{"x": pt[0] * scale_factor, "y": pt[1] * scale_factor} for pt in scribble]
+        scribbles_.append(scribble)
+    scribbles = scribbles_
     response = jsonify({"scribbles": scribbles}) 
     return response, 200
 
@@ -178,12 +199,14 @@ def save_scribbles():
         split = data.get('split')
         scribbles = data.get('scribbles', [])
         scale_factor = data.get('scaleFactor', 1.0)
-        # Here you can process the scribbles and other parameters
-        # print(f'Received scribbles: {scribbles}')
-        # print(f'ctgName: {ctg_name}, collectionName: {collection_name}, currentIndex: {current_index}, split: {split}, scale_factor: {scale_factor}')
-        # Example: Save to a file
         print(f"============== RECEIVED {scale_factor} ==============")
-        if not osp.exists(osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".pkl")):
+        path1 = osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".pkl")
+        path2 = osp.join(DATASETS_DIR, ctg_name, collection_name, split, "remove", str(current_index).zfill(6) + ".pkl")
+        path3 = osp.join(DATASETS_DIR, ctg_name, collection_name, split, "reannotate", str(current_index).zfill(6) + ".pkl")
+        path1exists = osp.exists(path1)
+        path2exists = osp.exists(path2)
+        path3exists = osp.exists(path3)
+        if not osp.exists(path1) and not osp.exists(path2) and not osp.exists(path3): 
             res_json = {
                 "message": "image with the given attributes cannot be found",
             }
@@ -194,9 +217,16 @@ def save_scribbles():
             scribbles_.append((np.array(scribble_) / float(scale_factor)).astype(np.int32))
         scribbles = scribbles_
         pkl_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".pkl")
-        img_path = osp.join(DATASETS_DIR, ctg_name, collection_name, split, str(current_index).zfill(6) + ".jpg")
-        img = cv2.imread(img_path)
-        print(img.shape)
+        if path1exists:
+            img_path = path1.replace("pkl", "jpg") 
+            pkl_path = path1
+        if path2exists:
+            img_path = path2.replace("pkl", "jpg")
+            pkl_path = path2
+        if path3exists:
+            img_path = path3.replace("pkl", "jpg")
+            pkl_path = path3
+
         with open(pkl_path, "rb") as f:
             pkl_data = pickle.load(f)
         pkl_data["annotations"]["scribbles"] = scribbles
@@ -314,7 +344,7 @@ def fetch_annotation():
                 cv2.polylines(plain_img, [scribble], False, color, 3)
             else:
                 for pt in scribble:
-                    cv2.circle(plain_img, pt, 3, color, 3)
+                    cv2.circle(plain_img, (pt[0], pt[1]), 3, color, 3)
             # cv2.polylines(plain_img, [scribble], False, color, 3)
         # cv2.polylines(plain_img, scribbles, False, (255, 0, 0), 2)
 

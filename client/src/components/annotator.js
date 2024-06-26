@@ -7,6 +7,7 @@ const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scribbles, setScribbles] = useState([]);
+  const [polylines, setPolylines] = useState([]); // Initialize polylines state here
 
   useEffect(() => {
     const fetchImage = async () => {
@@ -52,6 +53,7 @@ const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
         console.log("The obtained scribbles are " + data.scribbles);
         setScribbles(data.scribbles);
         setLoading(false);
+        setPolylines(data.scribbles); // Set polylines to the fetched scribbles
       } catch (error) {
         console.error("Failed to send to reannotate", error);
         setLoading(false);
@@ -62,13 +64,12 @@ const useImageFromUrl = ({ ctgName, collectionName, currentIndex, split }) => {
     fetchScribbles();
   }, [ctgName, collectionName, currentIndex, split]);
 
-  return [image, loading, scribbles];
+  return [image, loading, scribbles, polylines, setPolylines]; // Return polylines from the hook
 };
 
 const ImageCanvas = () => {
   let { collectionName, ctgName, split, currentIndex } = useParams();
-  const [image, loading, scribbles] = useImageFromUrl({ ctgName, collectionName, currentIndex, split });
-  const [polylines, setPolylines] = useState([]);
+  const [image, loading, scribbles, polylines, setPolylines] = useImageFromUrl({ ctgName, collectionName, currentIndex, split });
   const [currentPolyline, setCurrentPolyline] = useState([]);
   const [selectedPolyline, setSelectedPolyline] = useState(null);
   const [mousePosition, setMousePosition] = useState(null);
